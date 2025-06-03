@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Simulador Futebol - Modo Carreira com Escalação na Copa</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      font-family: 'Orbitron', sans-serif;
+      background: radial-gradient(circle at center, #101820, #0a0e13);
+      color: #fff;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+    h1, h2 {
+      color: #00ffcc;
+    }
+    .menu, .career, .training, .game {
+      display: none;
+    }
+    .active {
+      display: block;
+    }
+    .btn {
+      background-color: #00ffcc;
+      border: none;
+      border-radius: 12px;
+      color: #000;
+      cursor: pointer;
+      font-size: 18px;
+      margin: 10px;
+      padding: 12px 35px;
+      transition: background-color 0.3s;
+    }
+    .btn:hover {
+      background-color: #00ddb3;
+    }
+    input[type="text"] {
+      padding: 10px;
+      font-size: 18px;
+      border-radius: 8px;
+      border: none;
+      width: 150px;
+      margin: 5px;
+    }
+    .container-flex {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+    .players-section, .game-section {
+      background: rgba(0, 255, 204, 0.1);
+      border-radius: 15px;
+      padding: 15px 20px;
+      max-width: 400px;
+      min-width: 300px;
+      text-align: left;
+    }
+    .players-section h3 {
+      color: #00ffcc;
+      margin-top: 0;
+      text-align: center;
+    }
+    .player-list {
+      max-height: 400px;
+      overflow-y: auto;
+      margin-top: 10px;
+    }
+    .player {
+      background: rgba(0, 255, 204, 0.2);
+      margin-bottom: 10px;
+      border-radius: 10px;
+      padding: 8px 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 16px;
+    }
+    .player span {
+      flex: 1;
+    }
+    .player button {
+      margin-left: 10px;
+      font-size: 14px;
+      padding: 6px 10px;
+      border-radius: 8px;
+    }
+    .selected-player {
+      background-color: #00ddb3 !important;
+      color: #000 !important;
+    }
+    .scoreboard {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 24px;
+      margin: 20px 0 10px;
+      gap: 10px;
+    }
+    .score {
+      font-size: 50px;
+      font-weight: 900;
+      width: 80px;
+    }
+    .event-log {
+      max-width: 820px;
+      margin: 20px auto 10px;
+      background: rgba(255, 255, 255, 0.07);
+      padding: 15px;
+      border-radius: 12px;
+      height: 250px;
+      overflow-y: auto;
+      text-align: left;
+      box-shadow: inset 0 0 15px #00ffcc33;
+      font-size: 14px;
+    }
+    .evento-gol {
+      color: gold;
+      font-weight: bold;
+    }
+    .evento-final {
+      color: #00ffcc;
+      font-weight: 900;
+      font-size: 18px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Menu Inicial -->
+<div class="menu active" id="initialMenu">
+  <h1>Simulador de Futebol</h1>
+  <button class="btn" onclick="showCareerMenu()">Jogar</button>
+</div>
+
+<!-- Modo Carreira -->
+<div class="career" id="careerMenu">
+  <h2>Escolha o Campeonato</h2>
+  <button class="btn" id="champ0" onclick="selectChampionship(0)">Copa Local</button>
+  <button class="btn" id="champ1" onclick="selectChampionship(1)" disabled>Copa Estadual</button>
+  <button class="btn" id="champ2" onclick="selectChampionship(2)" disabled>Copa Nacional</button>
+  <br />
+  <button class="btn" onclick="showTrainingMenu()">Treinar Jogadores</button>
+  <br />
+  <button class="btn" onclick="backToInitial()">Voltar</button>
+</div>
+
+<!-- Treinamento -->
+<div class="training" id="trainingMenu">
+  <h2>Treinar Jogadores</h2>
+  <div class="player-list" id="trainingList"></div>
+  <button class="btn" onclick="backToCareer()">Voltar</button>
+</div>
+
+<!-- Tela da Copa com escalação e jogo juntos -->
+<div class="game" id="gameScreen">
+  <h2 id="champName">Campeonato</h2>
+  <div class="container-flex">
+
+    <div class="players-section">
+      <h3>Escalar Jogadores</h3>
+      <div class="player-list" id="playerList"></div>
+      <p><small>Clique em "Escalar" para incluir ou "Remover" para tirar do time.</small></p>
+    </div>
+
+    <div class="game-section">
+      <input type="text" id="teamAInput" placeholder="Nome do Time A" value="Time A" />
+      <input type="text" id="teamBInput" placeholder="Nome do Time B" value="Time B" />
+      <br />
+      <button class="btn" onclick="startMatch()">Iniciar Partida</button>
+      <div class="scoreboard">
+        <div id="teamAName" style="flex:1;">Time A</div>
+        <div id="scoreA" class="score">0</div>
+        <div style="font-size: 40px;">X</div>
+        <div id="scoreB" class="score">0</div>
+        <div id="teamBName" style="flex:1;">Time B</div>
+      </div>
+      <button class="btn" id="simulateBtn" onclick="startSimulation()">Simular Partida</button>
+      <div class="event-log" id="eventLog"></div>
+      <button class="btn" id="continueBtn" onclick="continueCareer()" style="display:none;">Continuar</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // Dados dos jogadores com atributos e se estão escalados
+  const jogadores = [
+    { nome: "João", atributo: 50, emTreino: false, escalado: false },
+    { nome: "Carlos", atributo: 45, emTreino: false, escalado: false },
+    { nome: "Rafael", atributo: 60, emTreino: false, escalado: false },
+    { nome: "Lucas", atributo: 55, emTreino: false, escalado: false },
+    { nome: "Pedro", atributo: 52, emTreino: false, escalado: false },
+    { nome: "Mateus", atributo: 48, emTreino: false, escalado: false },
+    { nome: "Felipe", atributo: 53, emTreino: false, escalado: false },
+    { nome: "André", atributo: 49, emTreino: false, escalado: false }
+  ];
+
+  // Variáveis globais
+  let currentChampionship = 0;
+  let scoreA = 0;
+  let scoreB = 0;
+  let tempoAtual = 0;
+  let fimPrimeiroTempo = false;
+  let intervaloSimulacao = null;
+  let matchInProgress = false;
+
+  // Elementos DOM
+  const initialMenu = document.getElementById('initialMenu');
+  const careerMenu = document.getElementById('careerMenu');
+  const trainingMenu = document.getElementById('trainingMenu');
+  const gameScreen = document.getElementById('gameScreen');
+  const playerListDiv = document.getElementById('playerList');
+  const trainingListDiv = document.getElementById('trainingList');
+  const eventLog = document.getElementById('eventLog');
+  const simulateBtn = document.getElementById('simulateBtn');
+  const continueBtn = document.getElementById('continueBtn');
+
+  // Funções para navegação entre telas
+  function showCareerMenu() {
+    initialMenu.classList.remove('active');
+    careerMenu.classList.add('active');
+  }
+  function backToInitial() {
+    careerMenu.classList.remove('active');
+    initialMenu.classList.add('active');
+  }
+  function showTrainingMenu() {
+    careerMenu.classList.remove('active');
+    trainingMenu.classList.add('active');
+    renderTraining();
+  }
+  function backToCareer() {
+    trainingMenu.classList.remove('active');
+    careerMenu.classList.add('active');
+  }
+  function showGameScreen() {
+    careerMenu.classList.remove('active');
+    trainingMenu.classList.remove('active');
+    gameScreen.classList.add('active');
+  }
+
+  // Renderizar lista de jogadores para escalar na aba do campeonato
+  function renderPlayerList() {
+    playerListDiv.innerHTML = '';
+    jogadores.forEach((j, i) => {
+      const div = document.createElement('div');
+      div.className = 'player';
+      div.innerHTML = `<span>${j.nome} (Atributo: ${j.atributo})</span>`;
+      const btn = document.createElement('button');
+      btn.textContent = j.escalado ? 'Remover' : 'Escalar';
+      if(j.escalado) btn.classList.add('selected-player');
+      btn.onclick = () => {
+        jogadores[i].escalado = !j.escalado;
+        renderPlayerList();
+      };
+      div.appendChild(btn);
+      playerListDiv.appendChild(div);
+    });
+  }
+
+  // Renderizar lista de jogadores para treinar
+  function renderTraining() {
+    trainingListDiv.innerHTML = '';
+    jogadores.forEach((j, i) => {
+      const div = document.createElement('div');
+      div.className = 'player';
+      div.innerHTML = `<span>${j.nome} (Atributo: ${j.atributo})</span>`;
+      const btn = document.createElement('button');
+      btn.textContent = '+ Treinar';
+      btn.onclick = () => trainPlayer(i);
+      div.appendChild(btn);
+      trainingListDiv.appendChild(div);
+    });
+  }
+
+  // Treinar jogador aumenta atributo
+  function trainPlayer(index) {
+    if(jogadores[index].atributo >= 100) {
+      alert(`${jogadores[index].nome} já está no máximo!`);
+      return;
+    }
+    jogadores[index].atributo += 5;
+    if(jogadores[index].atributo > 100) jogadores[index].atributo = 100;
+    alert(`${jogadores[index].nome} melhorou! Atributo agora: ${jogadores[index].atributo}`);
+    renderTraining();
+    renderPlayerList();
+  }
+
+  // Selecionar campeonato e mostrar tela com escalação
+  function selectChampionship(id) {
+    currentChampionship = id;
+    document.getElementById('champName').textContent = ["Copa Local", "Copa Estadual", "Copa Nacional"][id];
+    resetMatch();
+    renderPlayerList();
+    showGameScreen();
+  }
+
+  // Resetar partida
+  function resetMatch() {
+    scoreA = 0;
+    scoreB = 0;
+    tempoAtual = 0;
+    fimPrimeiroTempo = false;
+    matchInProgress = false;
+    document.getElementById('scoreA').textContent = scoreA;
+    document.getElementById('scoreB').textContent = scoreB;
+    document.getElementById('teamAName').textContent = document.getElementById('teamAInput').value || 'Time A';
+    document.getElementById('teamBName').textContent = document.getElementById('teamBInput').value || 'Time B';
+    eventLog.innerHTML = '';
+    simulateBtn.disabled = false;
+    continueBtn.style.display = 'none';
+  }
+
+  // Iniciar partida com verificação de jogadores escalados
+  function startMatch() {
+    const escalados = jogadores.filter(j => j.escalado);
+    if(escalados.length === 0){
+      alert('Você precisa escalar pelo menos 1 jogador para iniciar a partida!');
+      return;
+    }
+    resetMatch();
+    alert('Prepara-se! A partida vai começar.');
+  }
+
+  // Eventos do jogo
+  const eventos = [
+    { texto: "marcou gol", gol: true },
+    { texto: "cometeu falta", gol: false },
+    { texto: "recebeu cartão amarelo", gol: false },
+    { texto: "foi expulso", gol: false },
+    { texto: "sofreu pênalti", gol: false },
+    { texto: "defendeu chute", gol: false },
+    { texto: "perdeu chance clara", gol: false },
+    { texto: "cobrou escanteio", gol: false },
+    { texto: "fez ótima defesa", gol: false }
+  ];
+
+  // Simulação de jogo baseada nos jogadores escalados
+  function startSimulation() {
+    if(matchInProgress) return;
+    const escalados = jogadores.filter(j => j.escalado);
+    if(escalados.length === 0){
+      alert('Você precisa escalar jogadores para simular a partida!');
+      return;
+    }
+    matchInProgress = true;
+    simulateBtn.disabled = true;
+    tempoAtual = 1;
+    fimPrimeiroTempo = false;
+    eventLog.innerHTML = '';
+
+    // Qualidade dos times para balancear chances
+    let qualidadeTimeA = escalados.reduce((acc,j) => acc + j.atributo, 0);
+    let qualidadeTimeB = qualidadeTimeA * (0.8 + Math.random() * 0.4);
+
+    intervaloSimulacao = setInterval(() => {
+      if(tempoAtual > 90){
+        clearInterval(intervaloSimulacao);
+        matchInProgress = false;
+        continueBtn.style.display = 'inline-block';
+
+        let vencedor = 'Empate';
+        if(scoreA > scoreB) vencedor = document.getElementById('teamAName').textContent;
+        else if(scoreB > scoreA) vencedor = document.getElementById('teamBName').textContent;
+
+        addEventFinal(`🏁 Fim do jogo! Resultado final: ${scoreA} x ${scoreB}`);
+        addEventFinal(`🏆 O time vencedor foi: ${vencedor}`);
+        return;
+      }
+
+      if(tempoAtual === 46 && !fimPrimeiroTempo){
+        fimPrimeiroTempo = true;
+        addEventFinal("⏸️ Fim do primeiro tempo");
+        tempoAtual++;
+        return;
+      }
+
+      const chanceEvento = Math.random();
+
+      if(chanceEvento < 0.6){
+        const time = Math.random() < (qualidadeTimeA/(qualidadeTimeA+qualidadeTimeB)) ? 'A' : 'B';
+        const jogadoresTime = time === 'A' ? escalados : [];
+        const jogador = time === 'A' ? jogadoresTime[Math.floor(Math.random()*jogadoresTime.length)] : { nome: 'Adversário' };
+        const evento = eventos[Math.floor(Math.random()*eventos.length)];
+
+        let textoEvento = `${jogador.nome} (${time === 'A' ? document.getElementById('teamAName').textContent : document.getElementById('teamBName').textContent}) ${evento.texto} aos ${tempoAtual}:00`;
+
+        if(evento.gol){
+          let chanceGol = 0.3;
+          if(time === 'A') chanceGol += jogador.atributo / 300;
+          else chanceGol += 0.25;
+
+          if(Math.random() < chanceGol){
+            if(time === 'A'){
+              scoreA++;
+              document.getElementById('scoreA').textContent = scoreA;
+            } else {
+              scoreB++;
+              document.getElementById('scoreB').textContent = scoreB;
+            }
+            addEventGol(textoEvento);
+          } else {
+            addEvent(textoEvento);
+          }
+        } else {
+          addEvent(textoEvento);
+        }
+      } else {
+        addEvent(`⚽ Jogo segue aos ${tempoAtual}:00`);
+      }
+
+      tempoAtual++;
+    }, 1300);
+  }
+
+  // Adicionar eventos no log
+  function addEvent(texto) {
+    const p = document.createElement('p');
+    p.textContent = texto;
+    eventLog.prepend(p);
+  }
+  function addEventGol(texto) {
+    const p = document.createElement('p');
+    p.textContent = texto;
+    p.classList.add('evento-gol');
+    eventLog.prepend(p);
+  }
+  function addEventFinal(texto) {
+    const p = document.createElement('p');
+    p.textContent = texto;
+    p.classList.add('evento-final');
+    eventLog.prepend(p);
+  }
+
+  // Continuar no modo carreira após o jogo
+  function continueCareer() {
+    continueBtn.style.display = 'none';
+    simulateBtn.disabled = false;
+    resetMatch();
+    showCareerMenu();
+  }
+</script>
+
+</body>
+</html>
